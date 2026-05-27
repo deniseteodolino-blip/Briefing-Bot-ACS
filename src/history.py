@@ -34,7 +34,18 @@ def get_supabase():
     """Get Supabase client if configured."""
     if SUPABASE_URL and SUPABASE_KEY:
         from supabase import create_client
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
+        import streamlit as st
+
+        client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+        # Inject auth token if available in session to bypass RLS restrictions correctly
+        try:
+            if 'access_token' in st.session_state and 'refresh_token' in st.session_state:
+                client.auth.set_session(st.session_state.access_token, st.session_state.refresh_token)
+        except Exception as e:
+            print(f"Auth session error: {e}")
+
+        return client
     return None
 
 
@@ -44,7 +55,8 @@ def save_processamento(
     acs_num: int,
     data_corte: str,
     classificacao: dict,
-    mensagem: str
+    mensagem: str,
+    user_id: str = None
 ) -> dict:
     """Save a processing record to Supabase (or local fallback)."""
     supabase = get_supabase()
@@ -57,18 +69,25 @@ def save_processamento(
             "data_corte": data_corte,
             "processed_at": "now",
             "resultado_json": json.dumps(classificacao),
-            "mensagem": mensagem
+            "mensagem": mensagem,
+            "user_id": user_id
         }
         result = supabase.table("processamento").insert(data).execute()
         return result.data[0] if result.data else None
     else:
         # Fallback to local SQLite
         conn = _get_local_db()
+        # Add user_id column if it doesn't exist
+        try:
+            conn.execute("ALTER TABLE processamento ADD COLUMN user_id TEXT")
+        except sqlite3.OperationalError:
+            pass # Column already exists
+
         cursor = conn.execute(
             """INSERT INTO processamento
-               (filename, spe, acs_num, data_corte, processed_at, resultado_json, mensagem)
-               VALUES (?, ?, ?, ?, datetime('now'), ?, ?)""",
-            (filename, spe, acs_num, data_corte, json.dumps(classificacao), mensagem)
+               (filename, spe, acs_num, data_corte, processed_at, resultado_json, mensagem, user_id)
+               VALUES (?, ?, ?, ?, datetime('now'), ?, ?, ?)""",
+            (filename, spe, acs_num, data_corte, json.dumps(classificacao), mensagem, user_id)
         )
         conn.commit()
         record_id = cursor.lastrowid
@@ -76,12 +95,16 @@ def save_processamento(
         return {"id": record_id, "filename": filename, "spe": spe}
 
 
-def get_all_processamentos() -> list:
-    """Get all processing records from Supabase (or local fallback)."""
+def get_all_processamentos(user_id: str = None) -> list:
+    """Get all processing records for a specific user from Supabase (or local fallback)."""
     supabase = get_supabase()
 
     if supabase:
-        result = supabase.table("processamento").select("*").order("processed_at", desc=True).execute()
+        query = supabase.table("processamento").select("*")
+        if user_id:
+            query = query.eq("user_id", user_id)
+
+        result = query.order("processed_at", desc=True).execute()
 
         registros = []
         for row in result.data:
@@ -106,10 +129,17 @@ def get_all_processamentos() -> list:
     else:
         # Fallback to local SQLite
         conn = _get_local_db()
-        cursor = conn.execute(
-            """SELECT id, filename, spe, acs_num, data_corte, processed_at, resultado_json, mensagem
-               FROM processamento ORDER BY processed_at DESC"""
-        )
+        if user_id:
+            cursor = conn.execute(
+                """SELECT id, filename, spe, acs_num, data_corte, processed_at, resultado_json, mensagem
+                   FROM processamento WHERE user_id = ? OR user_id IS NULL ORDER BY processed_at DESC""",
+                (user_id,)
+            )
+        else:
+            cursor = conn.execute(
+                """SELECT id, filename, spe, acs_num, data_corte, processed_at, resultado_json, mensagem
+                   FROM processamento ORDER BY processed_at DESC"""
+            )
         rows = cursor.fetchall()
         conn.close()
 

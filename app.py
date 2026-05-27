@@ -653,6 +653,8 @@ def check_supabase_session():
                 return {"email": user.email, "id": getattr(user, 'id', 'unknown')}
             session = supabase.auth.get_session()
             if session and hasattr(session, 'user') and session.user:
+                st.session_state.access_token = session.access_token
+                st.session_state.refresh_token = session.refresh_token
                 return {"email": session.user.email, "id": session.user.id}
         except:
             pass
@@ -702,6 +704,8 @@ def main():
                             )
                             if response.user:
                                 st.session_state.user = {"email": response.user.email, "id": response.user.id}
+                                st.session_state.access_token = response.session.access_token
+                                st.session_state.refresh_token = response.session.refresh_token
                                 st.session_state.logged_in = True
                                 persist_login(response.user.email, response.user.id)
                                 st.rerun()
@@ -809,7 +813,8 @@ def show_process_tab():
                     save_processamento(
                         filename=uploaded_file.name,
                         spe=spe, acs_num=acs_num, data_corte=data_corte,
-                        classificacao=classificacao, mensagem=mensagem
+                        classificacao=classificacao, mensagem=mensagem,
+                        user_id=st.session_state.get('user', {}).get('id')
                     )
 
                     st.markdown("""
@@ -880,7 +885,8 @@ def show_history_tab():
     </div>
     """, unsafe_allow_html=True)
 
-    registros = get_all_processamentos()
+    user_id = st.session_state.get('user', {}).get('id') if st.session_state.get('logged_in') else None
+    registros = get_all_processamentos(user_id=user_id)
 
     if not registros:
         st.info("Nenhum processamento encontrado.")

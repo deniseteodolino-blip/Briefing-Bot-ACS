@@ -26,11 +26,17 @@ Sistema web (Streamlit) que:
 
 Acesse: **http://localhost:8501**
 
+### Conta para Teste (Hackathon)
+- **Login:** `seazone@seazone.com.br`
+- **Senha:** `teste`
+
 ### Funcionalidades:
 - **Upload de minuta**: arraste ou selecione arquivo (.pdf ou .docx)
 - **Processamento automático**: extrai pendências e gera mensagem
-- **Histórico**: consulta todos os processamentos anteriores
+- **Integração Pipefy**: botão para enviar a mensagem formatada direto ao CSI
+- **Histórico individual (RLS)**: consulta todos os processamentos atrelados ao seu usuário
 - **Persistência de login**: não precisa fazer login a cada atualização
+- **Fuso Horário BR**: todas as interações e histórico respeitam o horário de Brasília (UTC-3)
 
 ### Abas:
 1. **📁 Processar Minuta** - subir novos arquivos
@@ -69,10 +75,11 @@ SLACK_BOT_TOKEN=xoxb-sua-token
 SLACK_USER_ID=seu-user-id
 ```
 
-### 4. Criar tabela no Supabase
+### 4. Criar tabela no Supabase (com RLS - Row Level Security)
 
 ```sql
-CREATE TABLE processamento (
+-- 1. Cria a tabela (caso não exista)
+CREATE TABLE IF NOT EXISTS processamento (
     id SERIAL PRIMARY KEY,
     filename TEXT NOT NULL,
     spe TEXT,
@@ -80,13 +87,27 @@ CREATE TABLE processamento (
     data_corte TEXT,
     processed_at TIMESTAMP DEFAULT NOW(),
     resultado_json TEXT,
-    mensagem TEXT
+    mensagem TEXT,
+    user_id UUID REFERENCES auth.users(id)
 );
 
--- Permissão para todos autenticados
+-- 2. Habilita a segurança em nível de linha (isolamento total)
 ALTER TABLE processamento ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Todos podem ver registros" ON processamento
-    FOR SELECT USING (true);
+
+-- 3. Cria a Política de SELECT: O usuário só consegue ler as linhas onde o user_id dele bater
+CREATE POLICY "Usuários podem ver apenas seus próprios registros"
+ON processamento FOR SELECT
+USING (auth.uid() = user_id);
+
+-- 4. Cria a Política de INSERT: O usuário só pode salvar histórico se o user_id for o dele
+CREATE POLICY "Usuários podem inserir seus próprios registros"
+ON processamento FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- 5. Cria a Política de DELETE: O usuário só consegue excluir as próprias minutas
+CREATE POLICY "Usuários podem excluir seus próprios registros"
+ON processamento FOR DELETE
+USING (auth.uid() = user_id);
 ```
 
 ### 5. Rodar o app
