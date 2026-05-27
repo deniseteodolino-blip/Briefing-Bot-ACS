@@ -850,6 +850,7 @@ def show_process_tab():
                             data=mensagem,
                             file_name=f"briefing_{spe}_{acs_num}acs.txt",
                             mime="text/plain",
+                            key=f"dl_msg_{acs_num}",
                             use_container_width=True
                         )
                     with col2:
