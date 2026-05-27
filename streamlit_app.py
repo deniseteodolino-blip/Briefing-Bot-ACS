@@ -788,7 +788,7 @@ def show_process_tab():
     with col2:
         st.markdown("<h3 style='font-size:16px; font-weight:600; margin-bottom:16px; text-align:center;'>Upload da Minuta ACS</h3>", unsafe_allow_html=True)
         uploaded_file = st.file_uploader(
-            "",
+            "Upload da Minuta",
             type=["pdf", "docx"],
             label_visibility="collapsed"
         )
