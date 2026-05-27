@@ -113,7 +113,7 @@ USING (auth.uid() = user_id);
 ### 5. Rodar o app
 
 ```bash
-streamlit run app.py --server.headless true --server.port 8501
+streamlit run streamlit_app.py --server.headless true --server.port 8501
 ```
 
 ## Uso
@@ -138,7 +138,7 @@ streamlit run app.py --server.headless true --server.port 8501
 
 ```
 hackathon-cfo-briefing-bot/
-├── app.py                    # Interface web (Streamlit)
+├── streamlit_app.py                    # Interface web (Streamlit)
 ├── src/
 │   ├── minuta_reader.py      # Extração de pendências da minuta
 │   ├── cnpj_classifier.py    # Classificação via BrasilAPI
