@@ -17,5 +17,6 @@ slack-sdk>=3.27.0
 streamlit>=1.30.0
 supabase>=2.0.0
 
-# Local storage
-# sqlite3 is stdlib - no installation needed
+# Vercel serverless integration
+fastapi==0.104.1
+uvicorn==0.24.0.post1
