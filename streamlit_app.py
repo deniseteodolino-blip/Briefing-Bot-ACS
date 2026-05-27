@@ -648,14 +648,15 @@ def check_supabase_session():
         try:
             from supabase import create_client
             supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-            user = supabase.auth.get_user()
-            if user and hasattr(user, 'email'):
-                return {"email": user.email, "id": getattr(user, 'id', 'unknown')}
             session = supabase.auth.get_session()
             if session and hasattr(session, 'user') and session.user:
                 st.session_state.access_token = session.access_token
                 st.session_state.refresh_token = session.refresh_token
                 return {"email": session.user.email, "id": session.user.id}
+
+            user = supabase.auth.get_user()
+            if user and hasattr(user, 'user'):
+                return {"email": user.user.email, "id": user.user.id}
         except:
             pass
     return None
