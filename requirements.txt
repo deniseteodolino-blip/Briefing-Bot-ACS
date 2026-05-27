@@ -1,0 +1,21 @@
+# Core
+anthropic>=0.40.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+
+# API calls
+requests>=2.31.0
+
+# Document reading
+python-docx>=1.1.0
+pypdf>=4.0.0
+
+# Slack integration
+slack-sdk>=3.27.0
+
+# Web app
+streamlit>=1.30.0
+supabase>=2.0.0
+
+# Local storage
+# sqlite3 is stdlib - no installation needed
