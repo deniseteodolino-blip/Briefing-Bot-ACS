@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  briefing-bot:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - briefing-bot-data:/root/.briefing-bot-cache
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - SLACK_USER_ID=${SLACK_USER_ID:-}
+    restart: always
+
+volumes:
+  briefing-bot-data:
