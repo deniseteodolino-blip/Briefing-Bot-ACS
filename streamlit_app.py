@@ -974,9 +974,16 @@ def process_minuta(uploaded_file, planilha_url, force_refresh):
     try:
         pendencias = extract_pendencias_with_retry(tmp_path)
 
-        spe = pendencias.get('spe') or "SPE"
-        acs_num = pendencias.get('acs_num') or 1
-        data_corte = pendencias.get('data_corte') or "dd/mm/aaaa"
+        if pendencias.get("error"):
+            st.error(f"Erro ao falar com a Inteligência Artificial (Anthropic): {pendencias['error']}")
+            # Fallback para o usuário ver que deu erro na API
+            spe = "ERRO NA API"
+            acs_num = 0
+            data_corte = "erro"
+        else:
+            spe = pendencias.get('spe') or "SPE"
+            acs_num = pendencias.get('acs_num') or 1
+            data_corte = pendencias.get('data_corte') or "dd/mm/aaaa"
 
         classificacao = {
             "estrangeiros": pendencias.get('estrangeiros', []),

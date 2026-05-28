@@ -175,8 +175,9 @@ Se não encontrar nenhum em uma categoria, retorne array vazio []."""
             pendencias = {"estrangeiros": [], "simples_nacional": [], "me_epp": []}
 
     except Exception as e:
-        print(f"Erro ao extrair pendências: {e}")
-        pendencias = {"estrangeiros": [], "simples_nacional": [], "me_epp": []}
+        error_msg = f"Erro ao extrair pendências (API Anthropic): {str(e)}"
+        print(error_msg)
+        pendencias = {"estrangeiros": [], "simples_nacional": [], "me_epp": [], "error": error_msg}
 
     result = {
         "spe": data_info.get("spe"),
@@ -185,7 +186,8 @@ Se não encontrar nenhum em uma categoria, retorne array vazio []."""
         "estrangeiros": pendencias.get("estrangeiros", []),
         "simples_nacional": pendencias.get("simples_nacional", []),
         "me_epp": pendencias.get("me_epp", []),
-        "observacoes_raw": combined
+        "observacoes_raw": combined,
+        "error": pendencias.get("error")
     }
 
     return result
